@@ -3418,10 +3418,10 @@ int thermodynamics_recombination_with_recfast_3zones(
   double b, f1V, f2V, f3V, Delta1, Delta2, Delta3;
 
   //select free params - by now M1 with best b-value
-  b = .63;
-  f2V = 1./3.;
-  Delta1 = .1;
-  Delta2 = 1.;
+  b = pth->clumping_b;
+  f2V = pth->f2V;
+  Delta1 = pth->Delta1;
+  Delta2 = pth->Delta2;
 
   //recover other parameters using
   //sum(f^V_i)=1 - volume conservation

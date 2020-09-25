@@ -280,6 +280,17 @@ struct thermo
 
   //@}
 
+  /** @name - recfast_3zone parameters, not relevant for other recombination */
+
+  //@{
+
+  double clumping_b; //clumping parameter b=<n^2>/<n>^2-1; default 0
+  double f2V; //volume fraction in second zone; default 1/3
+  double Delta1; //density in first zone, in units of average density; default .1
+  double Delta2; //density in second zone, in units of average density; default 1
+
+  //@}
+
 };
 
 /**

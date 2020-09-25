@@ -1461,6 +1461,50 @@ int input_read_parameters(
 
   }
 
+  /** - baryon clumping parameter for recfast_3zones */
+  class_call(parser_read_string(pfc,"clumping_b",&string1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+  if (flag1 == _TRUE_) {
+
+    class_read_double("clumping_b",pth->clumping_b);
+
+  }
+
+  /** - second zone volume fraction for recfast_3zones */
+  class_call(parser_read_string(pfc,"f2V",&string1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+  if (flag1 == _TRUE_) {
+
+    class_read_double("f2V",pth->f2V);
+
+  }
+
+  /** - first zone density fraction for recfast_3zones */
+  class_call(parser_read_string(pfc,"Delta1",&string1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+  if (flag1 == _TRUE_) {
+
+    class_read_double("Delta1",pth->Delta1);
+
+  }
+
+  /** - second zone density for recfast_3zones */
+  class_call(parser_read_string(pfc,"Delta2",&string1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+  if (flag1 == _TRUE_) {
+
+    class_read_double("Delta2",pth->Delta2);
+
+  }
+
   /** - reionization parametrization */
   class_call(parser_read_string(pfc,"reio_parametrization",&string1,&flag1,errmsg),
              errmsg,
@@ -3230,6 +3274,10 @@ int input_default_params(
 
   pth->YHe=_BBN_;
   pth->recombination=recfast;
+  pth->clumping_b=0;
+  pth->f2V=1./3.;
+  pth->Delta1=.1;
+  pth->Delta2=1.;
   pth->reio_parametrization=reio_camb;
   pth->reio_z_or_tau=reio_z;
   pth->z_reio=11.357;
