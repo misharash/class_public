@@ -1455,6 +1455,10 @@ int input_read_parameters(
       pth->recombination = hyrec;
     }
 
+    if ((strstr(string1,"recfast_3zones") != NULL)) {
+      pth->recombination = recfast_3zones;
+    }
+
   }
 
   /** - reionization parametrization */

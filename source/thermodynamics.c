@@ -3096,7 +3096,15 @@ int thermodynamics_recombination(
 
   if (pth->recombination==recfast) {
 
-    class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,preco,pvecback),
+    class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,preco,pvecback,1.0),
+               pth->error_message,
+               pth->error_message);
+
+  }
+
+  if (pth->recombination==recfast_3zones) {
+
+    class_call(thermodynamics_recombination_with_recfast_3zones(ppr,pba,pth,preco,pvecback),
                pth->error_message,
                pth->error_message);
 
@@ -3397,6 +3405,69 @@ int thermodynamics_recombination_with_hyrec(
   return _SUCCESS_;
 }
 
+//do 3-zone model with RECFAST following Jedamzik&Pogosian (2020)
+int thermodynamics_recombination_with_recfast_3zones(
+                                              struct precision * ppr,
+                                              struct background * pba,
+                                              struct thermo * pth,
+                                              struct recombination * preco,
+                                              double * pvecback
+                                              ) {
+  
+  //clumping factor b and 3-zone params: volume fractions f^i_V and density fractions
+  double b, f1V, f2V, f3V, Delta1, Delta2, Delta3;
+
+  //select free params - by now M1 with best b-value
+  b = .63;
+  f2V = 1./3.;
+  Delta1 = .1;
+  Delta2 = 1.;
+
+  //recover other parameters using
+  //sum(f^V_i)=1 - volume conservation
+  //sum(f^V_i*Delta_i)=1 - average density fraction is 1
+  //sum(f^V_i*Delta_i^2)=1+b - mean square of density is by factor (1+b) higher than square of mean density
+  f1V = (b - f2V - b*f2V + 2*Delta2*f2V - Delta2*Delta2*f2V)/(1 + b - 2*Delta1 + Delta1*Delta1 - Delta1*Delta1*f2V + 2*Delta1*Delta2*f2V - Delta2*Delta2*f2V);
+  f3V = 1 - f1V - f2V;
+  Delta3 = (1 - f1V*Delta1 - f2V*Delta2)/f3V;
+
+  //define and prefill the 3 recombination structiures using the main recombination structure
+  struct recombination reco1, reco2, reco3;
+  memcpy(&reco1, preco, sizeof(struct recombination));
+  memcpy(&reco2, preco, sizeof(struct recombination));
+  memcpy(&reco3, preco, sizeof(struct recombination));
+
+  //invoke usual RECFAST 3 times with different density fractions
+  class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,&reco1,pvecback,Delta1),
+               pth->error_message,
+               pth->error_message);
+  class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,&reco3,pvecback,Delta3),
+               pth->error_message,
+               pth->error_message);
+  //zone 2 is the last just in case - because it usually has average density
+  class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,&reco2,pvecback,Delta2),
+               pth->error_message,
+               pth->error_message);
+
+  //since zone 2 usually has average density, copy basic fields from it to output structure
+  memcpy(preco, &reco2, sizeof(struct recombination));
+
+  //allocate new memory for the output table
+  class_alloc(preco->recombination_table,preco->re_size*preco->rt_size*sizeof(double),pth->error_message);
+
+  //merge 3 recombination sctuctures by averaging
+  int i;
+  for (i=0; i<preco->rt_size*preco->re_size; ++i)
+    *(preco->recombination_table + i) = f1V*Delta1*(reco1.recombination_table)[i] + f2V*Delta2*(reco2.recombination_table)[i] + f3V*Delta3*(reco3.recombination_table)[i];
+
+  //free inner arrays
+  free(reco1.recombination_table);
+  free(reco2.recombination_table);
+  free(reco3.recombination_table);
+  
+  return _SUCCESS_;
+}
+
 /**
  * Integrate thermodynamics with RECFAST.
  *
@@ -3447,7 +3518,8 @@ int thermodynamics_recombination_with_recfast(
                                               struct background * pba,
                                               struct thermo * pth,
                                               struct recombination * preco,
-                                              double * pvecback
+                                              double * pvecback,
+                                              double Delta
                                               ) {
 
   /** Summary: */
@@ -3523,7 +3595,7 @@ int thermodynamics_recombination_with_recfast(
   mu_H = 1./(1.-preco->YHe);
   //mu_T = _not4_ /(_not4_ - (_not4_-1.)*preco->YHe); /* recfast 1.4*/
   preco->fHe = preco->YHe/(_not4_ *(1.-preco->YHe)); /* recfast 1.4 */
-  preco->Nnow = 3.*preco->H0*preco->H0*OmegaB/(8.*_PI_*_G_*mu_H*_m_H_);
+  preco->Nnow = 3.*preco->H0*preco->H0*OmegaB/(8.*_PI_*_G_*mu_H*_m_H_) * Delta;
   pth->n_e = preco->Nnow;
 
   /* energy injection parameters */

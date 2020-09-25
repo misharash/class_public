@@ -14,7 +14,8 @@
 
 enum recombination_algorithm {
   recfast,
-  hyrec
+  hyrec,
+  recfast_3zones
 };
 
 /**
@@ -587,12 +588,21 @@ extern "C" {
 						double * pvecback
 						);
 
-  int thermodynamics_recombination_with_recfast(
+  int thermodynamics_recombination_with_recfast_3zones(
 						struct precision * ppr,
 						struct background * pba,
 						struct thermo * pth,
 						struct recombination * prec,
 						double * pvecback
+						);
+
+  int thermodynamics_recombination_with_recfast(
+						struct precision * ppr,
+						struct background * pba,
+						struct thermo * pth,
+						struct recombination * prec,
+						double * pvecback,
+            double Delta
 						);
 
   int thermodynamics_derivs_with_recfast(
