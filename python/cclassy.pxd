@@ -127,6 +127,11 @@ cdef extern from "class.h":
 
         int tt_size
 
+        double clumping_b
+        double f2V
+        double Delta1
+        double Delta2
+
     cdef struct perturbs:
         ErrorMsg error_message
         short has_scalars
