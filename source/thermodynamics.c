@@ -3455,22 +3455,6 @@ int thermodynamics_recombination_with_recfast_3zones(
   //allocate new memory for the output table
   class_alloc(preco->recombination_table,preco->re_size*preco->rt_size*sizeof(double),pth->error_message);
 
-  //temp: write recombination data for each model
-  FILE *fptr;
-  char fname[50];
-  sprintf(fname, "rectable-1-d%.2lf.bin", Delta1);
-  fptr = fopen(fname, "wb");
-  fwrite(reco1.recombination_table, sizeof(double), reco1.re_size * reco1.rt_size, fptr);
-  fclose(fptr);
-  sprintf(fname, "rectable-2-d%.2lf.bin", Delta2);
-  fptr = fopen(fname, "wb");
-  fwrite(reco2.recombination_table, sizeof(double), reco2.re_size * reco2.rt_size, fptr);
-  fclose(fptr);
-  sprintf(fname, "rectable-3-d%.2lf.bin", Delta3);
-  fptr = fopen(fname, "wb");
-  fwrite(reco3.recombination_table, sizeof(double), reco3.re_size * reco3.rt_size, fptr);
-  fclose(fptr);
-
   //merge 3 recombination structures
   int i, ii, j;
   for (i=0; i < preco->rt_size; ++i) {
