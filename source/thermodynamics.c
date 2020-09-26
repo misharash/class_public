@@ -3471,10 +3471,26 @@ int thermodynamics_recombination_with_recfast_3zones(
   fwrite(reco3.recombination_table, sizeof(double), reco3.re_size * reco3.rt_size, fptr);
   fclose(fptr);
 
-  //merge 3 recombination sctuctures by averaging
-  int i;
-  for (i=0; i<preco->rt_size*preco->re_size; ++i)
-    *(preco->recombination_table + i) = f1V*Delta1*(reco1.recombination_table)[i] + f2V*Delta2*(reco2.recombination_table)[i] + f3V*Delta3*(reco3.recombination_table)[i];
+  //merge 3 recombination structures
+  int i, ii, j;
+  for (i=0; i < preco->rt_size; ++i) {
+    ii = i * preco->re_size;
+    //take redshift from any of the tables
+    j = ii + preco->index_re_z;
+    *(preco->recombination_table + j) = (reco2.recombination_table)[j];
+    //average the intrinsic quantities (w.r.t. density) with weights f*delta
+    j = ii + preco->index_re_xe;
+    *(preco->recombination_table + j) = f1V*Delta1*(reco1.recombination_table)[j] + f2V*Delta2*(reco2.recombination_table)[j] + f3V*Delta3*(reco3.recombination_table)[j];
+    j = ii + preco->index_re_Tb;
+    *(preco->recombination_table + j) = f1V*Delta1*(reco1.recombination_table)[j] + f2V*Delta2*(reco2.recombination_table)[j] + f3V*Delta3*(reco3.recombination_table)[j];
+    j = ii + preco->index_re_cb2;
+    *(preco->recombination_table + j) = f1V*Delta1*(reco1.recombination_table)[j] + f2V*Delta2*(reco2.recombination_table)[j] + f3V*Delta3*(reco3.recombination_table)[j];
+    j = ii + preco->index_re_wb;
+    *(preco->recombination_table + j) = f1V*Delta1*(reco1.recombination_table)[j] + f2V*Delta2*(reco2.recombination_table)[j] + f3V*Delta3*(reco3.recombination_table)[j];
+    //average the extrinsic quantity (w.r.t. density) - scattering rate with weights f
+    j = ii + preco->index_re_dkappadtau;
+    *(preco->recombination_table + j) = f1V*(reco1.recombination_table)[j] + f2V*(reco2.recombination_table)[j] + f3V*(reco3.recombination_table)[j];
+  }
 
   //free inner arrays
   free(reco1.recombination_table);
