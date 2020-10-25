@@ -3414,10 +3414,10 @@ int thermodynamics_recombination_with_recfast_3zones(
                                               double * pvecback
                                               ) {
   
-  //clumping factor b and 3-zone params: volume fractions f^i_V and density fractions
+  //clumping factor b and 3-zone params: volume fractions f^i_V and density fractions Delta_i
   double b, f1V, f2V, f3V, Delta1, Delta2, Delta3;
 
-  //select free params - by now M1 with best b-value
+  //load free params
   b = pth->clumping_b;
   f2V = pth->f2V;
   Delta1 = pth->Delta1;
@@ -3455,14 +3455,14 @@ int thermodynamics_recombination_with_recfast_3zones(
   //allocate new memory for the output table
   class_alloc(preco->recombination_table,preco->re_size*preco->rt_size*sizeof(double),pth->error_message);
 
-  //merge 3 recombination structures
+  //merge 3 recombination tables
   int i, ii, j;
-  for (i=0; i < preco->rt_size; ++i) {
+  for (i = 0; i < preco->rt_size; ++i) {
     ii = i * preco->re_size;
     //take redshift from any of the tables
     j = ii + preco->index_re_z;
     *(preco->recombination_table + j) = (reco2.recombination_table)[j];
-    //average the intrinsic quantities (w.r.t. density) with weights f*delta
+    //average the intrinsic quantities (w.r.t. density) with weights f*Delta
     j = ii + preco->index_re_xe;
     *(preco->recombination_table + j) = f1V*Delta1*(reco1.recombination_table)[j] + f2V*Delta2*(reco2.recombination_table)[j] + f3V*Delta3*(reco3.recombination_table)[j];
     j = ii + preco->index_re_Tb;
