@@ -1459,6 +1459,10 @@ int input_read_parameters(
       pth->recombination = recfast_3zones;
     }
 
+    if ((strstr(string1,"recfast_Nzones") != NULL)) {
+      pth->recombination = recfast_Nzones;
+    }
+
   }
 
   /** - baryon clumping parameter for recfast_3zones */

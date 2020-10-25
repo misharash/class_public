@@ -3110,6 +3110,14 @@ int thermodynamics_recombination(
 
   }
 
+  if (pth->recombination==recfast_Nzones) {
+
+    class_call(thermodynamics_recombination_with_recfast_Nzones(ppr,pba,pth,preco,pvecback),
+               pth->error_message,
+               pth->error_message);
+
+  }
+
   return _SUCCESS_;
 
 }
@@ -3480,6 +3488,114 @@ int thermodynamics_recombination_with_recfast_3zones(
   free(reco1.recombination_table);
   free(reco2.recombination_table);
   free(reco3.recombination_table);
+  
+  return _SUCCESS_;
+}
+
+//log of beta function, used in beta-binomial PMF
+double lbeta(double x, double y) {
+  return lgamma(x)+lgamma(y)-lgamma(x+y);
+}
+
+//log of binomial coefficient, used in beta-binomial PMF
+double lbinomial(double n, double k) {
+  return lgamma(n+1)-lgamma(k+1)-lgamma(n-k+1);
+}
+
+//probability mass function of beta-binomial distributions, used for recfast with N zones
+double betabinomial_pmf(double n, double alpha, double beta, double k) {
+  return exp(lbinomial(n, k)+lbeta(k+alpha, n-k+beta)-lbeta(alpha, beta));
+}
+
+//do N>3 zones with RECFAST for modeling inhomogeneous density
+int thermodynamics_recombination_with_recfast_Nzones(
+                                              struct precision * ppr,
+                                              struct background * pba,
+                                              struct thermo * pth,
+                                              struct recombination * preco,
+                                              double * pvecback
+                                              ) {
+  
+  //clumping factor b
+  double b = pth->clumping_b;
+  //number of zones, hard-coded by now
+  int N = 10;
+  //wanted relation of number of zones with density less than 1 to zones ... greater than 1, hard-coded by now
+  double r_want = 0.5;
+  //zone params: volume fractions f^i_V and density fractions Delta_i
+  double fV[N], Delta[N];
+  int k; //to loop over zones
+
+  //adjust parameters of beta-binomial distribution
+  double r = fmin(fmax(2/b/N, r_want), 0.5/b); //can not be just what we want - otherwise alpha, beta are negative or change abruptly
+  double beta = N*(1-r*b)/(1+r)/(N*r*b-1);
+  double alpha = r*beta;
+  //calculate zone params that meet the following constraints
+  //sum(f^V_i)=1 - volume conservation
+  //sum(f^V_i*Delta_i)=1 - average density fraction is 1
+  //sum(f^V_i*Delta_i^2)=1+b - mean square of density is by factor (1+b) higher than square of mean density
+  //there is a zone with zero density, but all is 0 there because Delta=0, so it's skipped
+  for (k = 0; k < N; ++k) {
+    Delta[k] = (k+1)/(N*alpha/(alpha+beta)); //density fractions normalized such that mean is 1
+    fV[k] = betabinomial_pmf(N, alpha, beta, k+1); //probabilities from beta-binomial distribution
+  }
+
+  //define and prefill the N recombination structures
+  struct recombination reco[N];
+  for (k = 0; k < N; ++k) memcpy(&reco[k], preco, sizeof(struct recombination));
+
+  //invoke usual RECFAST N times with different density fractions
+  for (k = 0; k<N; ++k) {
+    class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,&reco[k],pvecback,Delta[k]),
+                 pth->error_message,
+                 pth->error_message);
+  }
+
+  //do recombination with average density to fill the output recombination structure
+  class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,preco,pvecback,1),
+               pth->error_message,
+               pth->error_message);
+
+  //prepare to merge recombination structures by averaging
+  int i, ii, j;
+  for (i = 0; i < preco->rt_size; ++i) {
+    ii = i * preco->re_size;
+    //redshift is already filled, skip it
+    //fill all other quantities by zeros
+    j = ii + preco->index_re_xe;
+    *(preco->recombination_table + j) = 0;
+    j = ii + preco->index_re_Tb;
+    *(preco->recombination_table + j) = 0;
+    j = ii + preco->index_re_cb2;
+    *(preco->recombination_table + j) = 0;
+    j = ii + preco->index_re_wb;
+    *(preco->recombination_table + j) = 0;
+    j = ii + preco->index_re_dkappadtau;
+    *(preco->recombination_table + j) = 0;
+  }
+
+  //merge recombination structures
+  for (k = 0; k < N; ++k) {
+    for (i = 0; i < preco->rt_size; ++i) {
+      ii = i * preco->re_size;
+      //redshift is already filled, skip it
+      //average the intrinsic quantities (w.r.t. density) with weights f*Delta
+      j = ii + preco->index_re_xe;
+      *(preco->recombination_table + j) += fV[k]*Delta[k]*(reco[k].recombination_table)[j];
+      j = ii + preco->index_re_Tb;
+      *(preco->recombination_table + j) += fV[k]*Delta[k]*(reco[k].recombination_table)[j];
+      j = ii + preco->index_re_cb2;
+      *(preco->recombination_table + j) += fV[k]*Delta[k]*(reco[k].recombination_table)[j];
+      j = ii + preco->index_re_wb;
+      *(preco->recombination_table + j) += fV[k]*Delta[k]*(reco[k].recombination_table)[j];
+      //average the extrinsic quantity (w.r.t. density) - scattering rate with weights f
+      j = ii + preco->index_re_dkappadtau;
+      *(preco->recombination_table + j) += fV[k]*(reco[k].recombination_table)[j];
+    }
+  }
+
+  //free inner arrays
+  for (k=0; k<N; ++k) free(reco[k].recombination_table);
   
   return _SUCCESS_;
 }
