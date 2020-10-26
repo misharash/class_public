@@ -3492,21 +3492,6 @@ int thermodynamics_recombination_with_recfast_3zones(
   return _SUCCESS_;
 }
 
-//log of beta function, used in beta-binomial PMF
-double lbeta(double x, double y) {
-  return lgamma(x)+lgamma(y)-lgamma(x+y);
-}
-
-//log of binomial coefficient, used in beta-binomial PMF
-double lbinomial(double n, double k) {
-  return lgamma(n+1)-lgamma(k+1)-lgamma(n-k+1);
-}
-
-//probability mass function of beta-binomial distributions, used for recfast with N zones
-double betabinomial_pmf(double n, double alpha, double beta, double k) {
-  return exp(lbinomial(n, k)+lbeta(k+alpha, n-k+beta)-lbeta(alpha, beta));
-}
-
 //do N>3 zones with RECFAST for modeling inhomogeneous density
 int thermodynamics_recombination_with_recfast_Nzones(
                                               struct precision * ppr,
@@ -3520,32 +3505,48 @@ int thermodynamics_recombination_with_recfast_Nzones(
   double b = pth->clumping_b;
   //number of zones, hard-coded by now
   int N = 10;
-  //wanted relation of number of zones with density less than 1 to zones ... greater than 1, hard-coded by now
-  double r_want = 0.5;
   //zone params: volume fractions f^i_V and density fractions Delta_i
   double fV[N], Delta[N];
   int k; //to loop over zones
 
-  //adjust parameters of beta-binomial distribution
-  double r = fmin(fmax(2/b/N, r_want), 0.5/b); //can not be just what we want - otherwise alpha, beta are negative or change abruptly
-  double beta = N*(1-r*b)/(1+r)/(N*r*b-1);
-  double alpha = r*beta;
-  //calculate zone params that meet the following constraints
+  //adjust parameters of negative binomial distribution
+  double mu0 = 0.5*(N-1); //unshifted mean, adjusted to keep exactly half of the zones at density less than average
+  double mu0b = mu0*b;
+  double p = (-mu0b+sqrt(mu0b*mu0b+4*mu0b))/2; //success probability
+  double q = 1-p; //failure probability
+  double r = p/b; //number of failures until the experiment stops
+  double mu = mu0+r; //shifted mean
+  //initialize residual variables
+  double fVres = 1; //sum of fVs is 1
+  double fVDeltares = 1; //sum of fVs times Deltas is also 1
+  double fVDelta2res = 1+b; //sum of fVs times squares of Deltas is 1+b
+  //calculate values and probabilities for all zones except the first and last
+  for (k = 1; k < N-1; ++k) {
+    Delta[k] = (k+r)/mu; //density fractions normalized such that mean is 1
+    fV[k] = exp(lgamma(k+r)-lgamma(k+1)-lgamma(r)+r*log(q)+k*log(p)); //probabilities from generalized negative binomial (Polya) distribution
+    //decrement residual vars
+    fVres -= fV[k];
+    fVDeltares -= fV[k]*Delta[k];
+    fVDelta2res -= fV[k]*Delta[k]*Delta[k];
+  }
+  Delta[0] = r/mu; //set density in first zone
+  //calculate remaining zone params that meet the following constraints
   //sum(f^V_i)=1 - volume conservation
   //sum(f^V_i*Delta_i)=1 - average density fraction is 1
   //sum(f^V_i*Delta_i^2)=1+b - mean square of density is by factor (1+b) higher than square of mean density
-  //there is a zone with zero density, but all is 0 there because Delta=0, so it's skipped
-  for (k = 0; k < N; ++k) {
-    Delta[k] = (k+1)/(N*alpha/(alpha+beta)); //density fractions normalized such that mean is 1
-    fV[k] = betabinomial_pmf(N, alpha, beta, k+1); //probabilities from beta-binomial distribution
-  }
+  double Dres = fVDeltares/Delta[0]-fVres;
+  double D2res = fVDelta2res/Delta[0]/Delta[0]-fVres;
+  double x = D2res/Dres-1;
+  Delta[N-1] = Delta[0]*x;
+  fV[N-1] = Dres/(x-1);
+  fV[0] = fVres - fV[N-1];
 
   //define and prefill the N recombination structures
   struct recombination reco[N];
   for (k = 0; k < N; ++k) memcpy(&reco[k], preco, sizeof(struct recombination));
 
   //invoke usual RECFAST N times with different density fractions
-  for (k = 0; k<N; ++k) {
+  for (k = 0; k < N; ++k) {
     class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,&reco[k],pvecback,Delta[k]),
                  pth->error_message,
                  pth->error_message);
@@ -3595,7 +3596,7 @@ int thermodynamics_recombination_with_recfast_Nzones(
   }
 
   //free inner arrays
-  for (k=0; k<N; ++k) free(reco[k].recombination_table);
+  for (k = 0; k < N; ++k) free(reco[k].recombination_table);
   
   return _SUCCESS_;
 }
