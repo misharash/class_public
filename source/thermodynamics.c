@@ -3534,11 +3534,10 @@ int thermodynamics_recombination_with_recfast_Nzones(
   //sum(f^V_i)=1 - volume conservation
   //sum(f^V_i*Delta_i)=1 - average density fraction is 1
   //sum(f^V_i*Delta_i^2)=1+b - mean square of density is by factor (1+b) higher than square of mean density
-  double Dres = fVDeltares/Delta[0]-fVres;
-  double D2res = fVDelta2res/Delta[0]/Delta[0]-fVres;
-  double x = D2res/Dres-1;
-  Delta[N-1] = Delta[0]*x;
-  fV[N-1] = Dres/(x-1);
+  double Dres = fVDeltares-fVres*Delta[0];
+  double D2res = fVDelta2res-fVres*Delta[0]*Delta[0];
+  Delta[N-1] = D2res/Dres-Delta[0];
+  fV[N-1] = Dres/(Delta[N-1]-Delta[0]);
   fV[0] = fVres - fV[N-1];
 
   //define and prefill the N recombination structures
