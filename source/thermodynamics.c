@@ -3526,36 +3526,31 @@ int thermodynamics_recombination_with_recfast_Nzones(
   double fV[N], Delta[N];
   int k; //to loop over zones
 
-  //adjust parameters of negative binomial distribution
-  double mu0 = 0.5*(N-1); //unshifted mean, adjusted to keep exactly half of the zones at density less than average
-  double mu0b = mu0*b;
-  double p = (-mu0b+sqrt(mu0b*mu0b+4*mu0b))/2; //success probability
-  double q = 1-p; //failure probability
-  double r = p/b; //number of failures until the experiment stops
-  double mu = mu0+r; //shifted mean
+  //adjust parameters of binomial distribution
+  int n = N-1;
+  double p = 0.5;
+  double q = 1-p;
+  //Delta_k will be alpha*beta^k, solve for them to give correct
+  double gamma = pow(1+b, 1./(N-1));
+  double beta = (gamma*p*q+sqrt(p*q*(gamma-1)))/p/(1-gamma*p);
+  double alpha = pow(beta*p+q, 1-N);
   //initialize residual variables
   double fVres = 1; //sum of fVs is 1
   double fVDeltares = 1; //sum of fVs times Deltas is also 1
   double fVDelta2res = 1+b; //sum of fVs times squares of Deltas is 1+b
   //calculate values and probabilities for all zones except the first and last
-  for (k = 1; k < N-1; ++k) {
-    Delta[k] = (k+r)/mu; //density fractions normalized such that mean is 1
-    fV[k] = exp(lgamma(k+r)-lgamma(k+1)-lgamma(r)+r*log(q)+k*log(p)); //probabilities from generalized negative binomial (Polya) distribution
+  for (k = 0; k < N; ++k) {
+    Delta[k] = alpha*pow(beta, k);
+    fV[k] = exp(lgamma(N)-lgamma(k+1)-lgamma(N-k)+(n-k)*log(q)+k*log(p)); //binomial distribution point mass function
     //decrement residual vars
     fVres -= fV[k];
     fVDeltares -= fV[k]*Delta[k];
     fVDelta2res -= fV[k]*Delta[k]*Delta[k];
   }
-  Delta[0] = r/mu; //set density in first zone
-  //calculate remaining zone params that meet the following constraints
+  //the params should already meet the following constraints
   //sum(f^V_i)=1 - volume conservation
   //sum(f^V_i*Delta_i)=1 - average density fraction is 1
   //sum(f^V_i*Delta_i^2)=1+b - mean square of density is by factor (1+b) higher than square of mean density
-  double Dres = fVDeltares-fVres*Delta[0];
-  double D2res = fVDelta2res-fVres*Delta[0]*Delta[0];
-  Delta[N-1] = D2res/Dres-Delta[0];
-  fV[N-1] = Dres/(Delta[N-1]-Delta[0]);
-  fV[0] = fVres - fV[N-1];
 
   //define and prefill the N recombination structures
   struct recombination reco[N];
