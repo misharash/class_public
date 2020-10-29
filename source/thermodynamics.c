@@ -3451,9 +3451,9 @@ int thermodynamics_recombination_with_recfast_3zones(
   class_test(fabs(f1V*Delta1*Delta1+f2V*Delta2*Delta2+f3V*Delta3*Delta3 - (1+b)) > ctol, pth->error_message, "3 zones error: clumping factor (%.7lf) is too far from b=%lf", f1V*Delta1*Delta1+f2V*Delta2*Delta2+f3V*Delta3*Delta3-1, b);
 
   //sanity checks
-  class_test(f1V < 0, pth->error_message, "3 zones error: 1st volume fraction (%lf) is negative", f1V);
-  class_test(f2V < 0, pth->error_message, "3 zones error: 2nd volume fraction (%lf) is negative", f2V);
-  class_test(f3V < 0, pth->error_message, "3 zones error: 3rd volume fraction (%lf) is negative", f3V);
+  class_test(f1V < -ctol, pth->error_message, "3 zones error: 1st volume fraction (%lf) is negative", f1V);
+  class_test(f2V < -ctol, pth->error_message, "3 zones error: 2nd volume fraction (%lf) is negative", f2V);
+  class_test(f3V < -ctol, pth->error_message, "3 zones error: 3rd volume fraction (%lf) is negative", f3V);
   class_test(Delta1 <= 0, pth->error_message, "3 zones error: 1st density factor (%lf) is not positive", Delta1);
   class_test(Delta2 <= 0, pth->error_message, "3 zones error: 2nd density factor (%lf) is not positive", Delta2);
   class_test(Delta3 <= 0, pth->error_message, "3 zones error: 3rd density factor (%lf) is not positive", Delta3);
