@@ -3468,19 +3468,17 @@ int thermodynamics_recombination_with_recfast_3zones(
   class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,&reco1,pvecback,Delta1),
                pth->error_message,
                pth->error_message);
-  class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,&reco3,pvecback,Delta3),
-               pth->error_message,
-               pth->error_message);
-  //zone 2 is the last just in case - because it usually has average density
   class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,&reco2,pvecback,Delta2),
                pth->error_message,
                pth->error_message);
+  class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,&reco3,pvecback,Delta3),
+               pth->error_message,
+               pth->error_message);
 
-  //since zone 2 usually has average density, copy basic fields from it to output structure
-  memcpy(preco, &reco2, sizeof(struct recombination));
-
-  //allocate new memory for the output table
-  class_alloc(preco->recombination_table,preco->re_size*preco->rt_size*sizeof(double),pth->error_message);
+  //do recombination with average density to fill the output recombination structure
+  class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,preco,pvecback,1),
+               pth->error_message,
+               pth->error_message);
 
   //merge 3 recombination tables
   int i, ii, j;
