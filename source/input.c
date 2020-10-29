@@ -1465,7 +1465,7 @@ int input_read_parameters(
 
   }
 
-  /** - baryon clumping parameter for recfast_3zones */
+  /** - baryon clumping parameter for recfast_3zones or recfast_Nzones */
   class_call(parser_read_string(pfc,"clumping_b",&string1,&flag1,errmsg),
              errmsg,
              errmsg);
@@ -1506,6 +1506,17 @@ int input_read_parameters(
   if (flag1 == _TRUE_) {
 
     class_read_double("Delta2",pth->Delta2);
+
+  }
+
+  /** - number of zones for recfast_Nzones */
+  class_call(parser_read_string(pfc,"Nzones",&string1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+  if (flag1 == _TRUE_) {
+
+    class_read_int("Nzones",pth->Nzones);
 
   }
 
@@ -3282,6 +3293,7 @@ int input_default_params(
   pth->f2V=1./3.;
   pth->Delta1=.1;
   pth->Delta2=1.;
+  pth->Nzones=10;
   pth->reio_parametrization=reio_camb;
   pth->reio_z_or_tau=reio_z;
   pth->z_reio=11.357;

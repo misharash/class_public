@@ -3520,8 +3520,8 @@ int thermodynamics_recombination_with_recfast_Nzones(
   
   //clumping factor b
   double b = pth->clumping_b;
-  //number of zones, hard-coded by now
-  int N = 10;
+  //number of zones
+  int N = pth->Nzones;
   //zone params: volume fractions f^i_V and density fractions Delta_i
   double fV[N], Delta[N];
   int k; //to loop over zones

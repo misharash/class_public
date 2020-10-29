@@ -281,7 +281,7 @@ struct thermo
 
   //@}
 
-  /** @name - recfast_3zone parameters, not relevant for other recombination */
+  /** @name - recfast_3zones or recfast_Nzones parameters, not relevant for other recombination */
 
   //@{
 
@@ -289,6 +289,7 @@ struct thermo
   double f2V; //volume fraction in second zone; default 1/3
   double Delta1; //density in first zone, in units of average density; default .1
   double Delta2; //density in second zone, in units of average density; default 1
+  int Nzones; //number of zones for recfast_Nzones; default 10
 
   //@}
 
