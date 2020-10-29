@@ -3546,11 +3546,18 @@ int thermodynamics_recombination_with_recfast_Nzones(
     fVres -= fV[k];
     fVDeltares -= fV[k]*Delta[k];
     fVDelta2res -= fV[k]*Delta[k]*Delta[k];
+    //sanity check
+    class_test(fV[k] < 0, pth->error_message, "N=%d zones error: %d-th volume fraction (%lf) is negative", N, k, fV[k]);
+    class_test(Delta[k] <= 0, pth->error_message, "N=%d zones error: %d-th density factor (%lf) is not positive", N, k, Delta[k]);
   }
-  //the params should already meet the following constraints
-  //sum(f^V_i)=1 - volume conservation
-  //sum(f^V_i*Delta_i)=1 - average density fraction is 1
-  //sum(f^V_i*Delta_i^2)=1+b - mean square of density is by factor (1+b) higher than square of mean density
+  double ctol = 1e-6; //tolerance for constraints
+  //the params should already meet the following
+  //sum(f^V_i)=1 - volume conservation. RHS-LHS is stored in fVres
+  class_test(fabs(fVres) > ctol, pth->error_message, "N=%d zones error: sum of volume fractions (%.7lf) is too far from 1", N, 1-fVres);
+  //sum(f^V_i*Delta_i)=1 - average density fraction is 1. RHS-LHS is stored in fVDeltares
+  class_test(fabs(fVDeltares) > ctol, pth->error_message, "N=%d zones error: average density (%.7lf) is too far from 1", N, 1-fVDeltares);
+  //sum(f^V_i*Delta_i^2)=1+b - mean square of density is by factor (1+b) higher than square of mean density. RHS-LHS is stored in fVDelta2res
+  class_test(fabs(fVDelta2res) > ctol, pth->error_message, "N=%d zones error: clumping factor (%.7lf) is too far from b=%lf", N, b-fVDelta2res, b);
 
   //define and prefill the N recombination structures
   struct recombination reco[N];
