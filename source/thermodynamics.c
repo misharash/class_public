@@ -3435,9 +3435,14 @@ int thermodynamics_recombination_with_recfast_3zones(
   //sum(f^V_i)=1 - volume conservation
   //sum(f^V_i*Delta_i)=1 - average density fraction is 1
   //sum(f^V_i*Delta_i^2)=1+b - mean square of density is by factor (1+b) higher than square of mean density
-  f1V = (b - f2V - b*f2V + 2*Delta2*f2V - Delta2*Delta2*f2V)/(1 + b - 2*Delta1 + Delta1*Delta1 - Delta1*Delta1*f2V + 2*Delta1*Delta2*f2V - Delta2*Delta2*f2V);
-  f3V = 1 - f1V - f2V;
-  Delta3 = (1 - f1V*Delta1 - f2V*Delta2)/f3V;
+  double fVres = 1-f2V; //sum of fV for first and last zone
+  double fVDeltares = 1-f2V*Delta2; //sum of fV*Delta for first and last zone
+  double fVDelta2res = 1+b-f2V*Delta2*Delta2; //sum of fV*Delta^2 for first and last zone
+  double Dres = fVDeltares-fVres*Delta1; //=f3V*(Delta3-Delta1)
+  double D2res = fVDelta2res-fVres*Delta1*Delta1; //=f3V*(Delta3^2-Delta1^2)
+  Delta3 = D2res/Dres-Delta1; //D2res/Dres=Delta3+Delta1
+  f3V = Dres/(Delta3-Delta1);
+  f1V = fVres - f3V;
 
   //define and prefill the 3 recombination structiures using the main recombination structure
   struct recombination reco1, reco2, reco3;
