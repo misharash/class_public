@@ -3444,6 +3444,20 @@ int thermodynamics_recombination_with_recfast_3zones(
   f3V = Dres/(Delta3-Delta1);
   f1V = fVres - f3V;
 
+  //check the constraints
+  double ctol = 1e-6; //tolerance
+  class_test(fabs(f1V+f2V+f3V - 1) > ctol, pth->error_message, "3 zones error: sum of volume fractions is too far from 1");
+  class_test(fabs(f1V*Delta1+f2V*Delta2+f3V*Delta3 - 1) > ctol, pth->error_message, "3 zones error: average density is too far from 1");
+  class_test(fabs(f1V*Delta1*Delta1+f2V*Delta2*Delta2+f3V*Delta3*Delta3 - (1+b)) > ctol, pth->error_message, "3 zones error: clumping factor is too far from b");
+
+  //sanity checks
+  class_test(f1V < 0, pth->error_message, "3 zones error: 1st volume fraction is negative");
+  class_test(f2V < 0, pth->error_message, "3 zones error: 2nd volume fraction is negative");
+  class_test(f3V < 0, pth->error_message, "3 zones error: 3rd volume fraction is negative");
+  class_test(Delta1 <= 0, pth->error_message, "3 zones error: 1st density factor is not positive");
+  class_test(Delta2 <= 0, pth->error_message, "3 zones error: 2nd density factor is not positive");
+  class_test(Delta3 <= 0, pth->error_message, "3 zones error: 3rd density factor is not positive");
+
   //define and prefill the 3 recombination structiures using the main recombination structure
   struct recombination reco1, reco2, reco3;
   memcpy(&reco1, preco, sizeof(struct recombination));
