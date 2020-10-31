@@ -1463,6 +1463,14 @@ int input_read_parameters(
       pth->recombination = recfast_Nzones;
     }
 
+    if ((strstr(string1,"hyrec_3zones") != NULL)) {
+      pth->recombination = hyrec_3zones;
+    }
+
+    if ((strstr(string1,"hyrec_Nzones") != NULL)) {
+      pth->recombination = hyrec_Nzones;
+    }
+
   }
 
   /** - baryon clumping parameter for recfast_3zones or recfast_Nzones */

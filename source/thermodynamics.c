@@ -3088,7 +3088,7 @@ int thermodynamics_recombination(
 
   if (pth->recombination==hyrec) {
 
-    class_call(thermodynamics_recombination_with_hyrec(ppr,pba,pth,preco,pvecback),
+    class_call(thermodynamics_recombination_with_hyrec(ppr,pba,pth,preco,pvecback,1.0),
                pth->error_message,
                pth->error_message);
 
@@ -3102,17 +3102,17 @@ int thermodynamics_recombination(
 
   }
 
-  if (pth->recombination==recfast_3zones) {
+  if ((pth->recombination==recfast_3zones) || (pth->recombination==hyrec_3zones)) {
 
-    class_call(thermodynamics_recombination_with_recfast_3zones(ppr,pba,pth,preco,pvecback),
+    class_call(thermodynamics_recombination_3zones(ppr,pba,pth,preco,pvecback),
                pth->error_message,
                pth->error_message);
 
   }
 
-  if (pth->recombination==recfast_Nzones) {
+  if ((pth->recombination==recfast_Nzones) || (pth->recombination==hyrec_Nzones)) {
 
-    class_call(thermodynamics_recombination_with_recfast_Nzones(ppr,pba,pth,preco,pvecback),
+    class_call(thermodynamics_recombination_Nzones(ppr,pba,pth,preco,pvecback),
                pth->error_message,
                pth->error_message);
 
@@ -3148,7 +3148,8 @@ int thermodynamics_recombination_with_hyrec(
                                             struct background * pba,
                                             struct thermo * pth,
                                             struct recombination * preco,
-                                            double * pvecback
+                                            double * pvecback,
+                                            double Delta
                                             ) {
   /** Summary: */
 #ifdef HYREC
@@ -3180,7 +3181,7 @@ int thermodynamics_recombination_with_hyrec(
   param.wa = -dw_over_da_fld*pba->a_today;
   param.Y = pth->YHe;
   param.Nnueff = pba->Neff;
-  param.nH0 = 11.223846333047*param.obh2*(1.-param.Y);  /* number density of hydrogen today in m-3 */
+  param.nH0 = 11.223846333047*param.obh2*(1.-param.Y)*Delta;  /* number density of hydrogen today in m-3 */
   param.fHe = param.Y/(1-param.Y)/3.97153;              /* abundance of helium by number */
   param.zstart = ppr->recfast_z_initial; /* Redshift range */
   param.zend = 0.;
@@ -3413,14 +3414,14 @@ int thermodynamics_recombination_with_hyrec(
   return _SUCCESS_;
 }
 
-//do 3-zone model with RECFAST following Jedamzik&Pogosian (2020)
-int thermodynamics_recombination_with_recfast_3zones(
-                                              struct precision * ppr,
-                                              struct background * pba,
-                                              struct thermo * pth,
-                                              struct recombination * preco,
-                                              double * pvecback
-                                              ) {
+//do 3-zone model with RECFAST or HYREC following Jedamzik&Pogosian (2020)
+int thermodynamics_recombination_3zones(
+                                        struct precision * ppr,
+                                        struct background * pba,
+                                        struct thermo * pth,
+                                        struct recombination * preco,
+                                        double * pvecback
+                                        ) {
   
   //clumping factor b and 3-zone params: volume fractions f^i_V and density fractions Delta_i
   double b, f1V, f2V, f3V, Delta1, Delta2, Delta3;
@@ -3464,21 +3465,43 @@ int thermodynamics_recombination_with_recfast_3zones(
   memcpy(&reco2, preco, sizeof(struct recombination));
   memcpy(&reco3, preco, sizeof(struct recombination));
 
-  //invoke usual RECFAST 3 times with different density fractions
-  class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,&reco1,pvecback,Delta1),
-               pth->error_message,
-               pth->error_message);
-  class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,&reco2,pvecback,Delta2),
-               pth->error_message,
-               pth->error_message);
-  class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,&reco3,pvecback,Delta3),
-               pth->error_message,
-               pth->error_message);
+  if (pth->recombination==recfast_3zones) {
+    //invoke usual RECFAST 3 times with different density fractions
+    class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,&reco1,pvecback,Delta1),
+                pth->error_message,
+                pth->error_message);
+    class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,&reco2,pvecback,Delta2),
+                pth->error_message,
+                pth->error_message);
+    class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,&reco3,pvecback,Delta3),
+                pth->error_message,
+                pth->error_message);
 
-  //do recombination with average density to fill the output recombination structure
-  class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,preco,pvecback,1),
-               pth->error_message,
-               pth->error_message);
+    //do recombination with average density to fill the output recombination structure
+    class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,preco,pvecback,1),
+                pth->error_message,
+                pth->error_message);
+  }
+  else if (pth->recombination==hyrec_3zones) {
+    //invoke HYREC 3 times with different density fractions
+    class_call(thermodynamics_recombination_with_hyrec(ppr,pba,pth,&reco1,pvecback,Delta1),
+                pth->error_message,
+                pth->error_message);
+    class_call(thermodynamics_recombination_with_hyrec(ppr,pba,pth,&reco2,pvecback,Delta2),
+                pth->error_message,
+                pth->error_message);
+    class_call(thermodynamics_recombination_with_hyrec(ppr,pba,pth,&reco3,pvecback,Delta3),
+                pth->error_message,
+                pth->error_message);
+
+    //do recombination with average density to fill the output recombination structure
+    class_call(thermodynamics_recombination_with_hyrec(ppr,pba,pth,preco,pvecback,1),
+                pth->error_message,
+                pth->error_message);
+  }
+  else {
+    class_test((pth->recombination!=recfast_3zones)&&(pth->recombination!=hyrec_3zones), pth->error_message, "3 zones error: no algorithm matched");
+  }
 
   //merge 3 recombination tables
   int i, ii, j;
@@ -3509,14 +3532,14 @@ int thermodynamics_recombination_with_recfast_3zones(
   return _SUCCESS_;
 }
 
-//do N>3 zones with RECFAST for modeling inhomogeneous density
-int thermodynamics_recombination_with_recfast_Nzones(
-                                              struct precision * ppr,
-                                              struct background * pba,
-                                              struct thermo * pth,
-                                              struct recombination * preco,
-                                              double * pvecback
-                                              ) {
+//do N zones with RECFAST or HYREC for modeling inhomogeneous density
+int thermodynamics_recombination_Nzones(
+                                        struct precision * ppr,
+                                        struct background * pba,
+                                        struct thermo * pth,
+                                        struct recombination * preco,
+                                        double * pvecback
+                                        ) {
   
   //clumping factor b
   double b = pth->clumping_b;
@@ -3563,17 +3586,35 @@ int thermodynamics_recombination_with_recfast_Nzones(
   struct recombination reco[N];
   for (k = 0; k < N; ++k) memcpy(&reco[k], preco, sizeof(struct recombination));
 
-  //invoke usual RECFAST N times with different density fractions
-  for (k = 0; k < N; ++k) {
-    class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,&reco[k],pvecback,Delta[k]),
-                 pth->error_message,
-                 pth->error_message);
-  }
+  if (pth->recombination==recfast_Nzones) {
+    //invoke usual RECFAST N times with different density fractions
+    for (k = 0; k < N; ++k) {
+      class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,&reco[k],pvecback,Delta[k]),
+                  pth->error_message,
+                  pth->error_message);
+    }
 
-  //do recombination with average density to fill the output recombination structure
-  class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,preco,pvecback,1),
-               pth->error_message,
-               pth->error_message);
+    //do recombination with average density to fill the output recombination structure
+    class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,preco,pvecback,1),
+                pth->error_message,
+                pth->error_message);
+  }
+  else if (pth->recombination==hyrec_Nzones) {
+    //invoke HYREC N times with different density fractions
+    for (k = 0; k < N; ++k) {
+      class_call(thermodynamics_recombination_with_hyrec(ppr,pba,pth,&reco[k],pvecback,Delta[k]),
+                  pth->error_message,
+                  pth->error_message);
+    }
+
+    //do recombination with average density to fill the output recombination structure
+    class_call(thermodynamics_recombination_with_hyrec(ppr,pba,pth,preco,pvecback,1),
+                pth->error_message,
+                pth->error_message);
+  }
+  else {
+    class_test((pth->recombination!=recfast_Nzones)&&(pth->recombination!=hyrec_Nzones), pth->error_message, "N=%d zones error: no algorithm matched", N);
+  }
 
   //prepare to merge recombination structures by averaging
   int i, ii, j;

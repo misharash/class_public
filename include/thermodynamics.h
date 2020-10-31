@@ -16,7 +16,9 @@ enum recombination_algorithm {
   recfast,
   hyrec,
   recfast_3zones,
-  recfast_Nzones
+  recfast_Nzones,
+  hyrec_3zones,
+  hyrec_Nzones
 };
 
 /**
@@ -281,15 +283,15 @@ struct thermo
 
   //@}
 
-  /** @name - recfast_3zones or recfast_Nzones parameters, not relevant for other recombination */
+  /** @name - 3zones or Nzones parameters, not relevant for other recombination */
 
   //@{
 
   double clumping_b; //clumping parameter b=<n^2>/<n>^2-1; default 0
-  double f2V; //volume fraction in second zone; default 1/3
-  double Delta1; //density in first zone, in units of average density; default .1
-  double Delta2; //density in second zone, in units of average density; default 1
-  int Nzones; //number of zones for recfast_Nzones; default 10
+  double f2V; //volume fraction in second zone (3zones); default 1/3
+  double Delta1; //density in first zone (3zones), in units of average density; default .1
+  double Delta2; //density in second zone (3zones), in units of average density; default 1
+  int Nzones; //number of zones for Nzones; default 10
 
   //@}
 
@@ -598,10 +600,11 @@ extern "C" {
 						struct background * pba,
 						struct thermo * pth,
 						struct recombination * prec,
-						double * pvecback
+						double * pvecback,
+						double Delta
 						);
 
-  int thermodynamics_recombination_with_recfast_3zones(
+  int thermodynamics_recombination_3zones(
 						struct precision * ppr,
 						struct background * pba,
 						struct thermo * pth,
@@ -609,7 +612,7 @@ extern "C" {
 						double * pvecback
 						);
 
-  int thermodynamics_recombination_with_recfast_Nzones(
+  int thermodynamics_recombination_Nzones(
 						struct precision * ppr,
 						struct background * pba,
 						struct thermo * pth,
@@ -623,7 +626,7 @@ extern "C" {
 						struct thermo * pth,
 						struct recombination * prec,
 						double * pvecback,
-            double Delta
+						double Delta
 						);
 
   int thermodynamics_derivs_with_recfast(
