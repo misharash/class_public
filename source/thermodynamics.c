@@ -3302,7 +3302,7 @@ int thermodynamics_recombination_with_hyrec(
   preco->H0 = pba->H0 * _c_ / _Mpc_over_m_;
   /* preco->H0 in inverse seconds (while pba->H0 is [H0/c] in inverse Mpcs) */
   preco->YHe = pth->YHe;
-  preco->Nnow = 3.*preco->H0*preco->H0*pba->Omega0_b*(1.-preco->YHe)/(8.*_PI_*_G_*_m_H_);
+  preco->Nnow = 3.*preco->H0*preco->H0*pba->Omega0_b*(1.-preco->YHe)/(8.*_PI_*_G_*_m_H_)*Delta;
   /* energy injection parameters */
   preco->annihilation = pth->annihilation;
   preco->has_on_the_spot = pth->has_on_the_spot;
@@ -3500,7 +3500,7 @@ int thermodynamics_recombination_3zones(
                 pth->error_message);
   }
   else {
-    class_test((pth->recombination!=recfast_3zones)&&(pth->recombination!=hyrec_3zones), pth->error_message, "3 zones error: no algorithm matched");
+    class_stop(pth->error_message, "3 zones error: no algorithm (RECFAST or HYREC) matched");
   }
 
   //merge 3 recombination tables
@@ -3613,7 +3613,7 @@ int thermodynamics_recombination_Nzones(
                 pth->error_message);
   }
   else {
-    class_test((pth->recombination!=recfast_Nzones)&&(pth->recombination!=hyrec_Nzones), pth->error_message, "N=%d zones error: no algorithm matched", N);
+    class_stop(pth->error_message, "N=%d zones error: no algorithm (RECFAST or HYREC) matched", N);
   }
 
   //prepare to merge recombination structures by averaging
