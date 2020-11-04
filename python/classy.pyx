@@ -1718,6 +1718,8 @@ cdef class Class:
                 value = self.th.da_rec
             elif name == 'da_rec_h':
                 value = self.th.da_rec*self.ba.h
+            elif name == 'rd_rec':
+                value = self.th.rd_rec
             elif name == 'z_star':
                 value = self.th.z_star
             elif name == 'tau_star':
