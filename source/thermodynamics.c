@@ -3554,9 +3554,9 @@ int thermodynamics_recombination_Nzones(
   double p = 0.5;
   double q = 1-p;
   //Delta_k will be alpha*beta^k, solve for them to give correct
-  double gamma = pow(1+b, 1./(N-1));
+  double gamma = pow(1+b, 1./n);
   double beta = (gamma*p*q+sqrt(p*q*(gamma-1)))/p/(1-gamma*p);
-  double alpha = pow(beta*p+q, 1-N);
+  double alpha = pow(beta*p+q, -n);
   //initialize residual variables
   double fVres = 1; //sum of fVs is 1
   double fVDeltares = 1; //sum of fVs times Deltas is also 1
