@@ -3551,7 +3551,7 @@ int thermodynamics_recombination_Nzones(
 
   //adjust parameters of binomial distribution
   int n = N-1;
-  double p = 0.5;
+  double p = pth->p_zones;
   double q = 1-p;
   //Delta_k will be alpha*beta^k, solve for them to give correct
   double gamma = pow(1+b, 1./n);

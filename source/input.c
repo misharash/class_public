@@ -1528,6 +1528,17 @@ int input_read_parameters(
 
   }
 
+  /** - binomial success probability for recfast_Nzones */
+  class_call(parser_read_string(pfc,"p_zones",&string1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+  if (flag1 == _TRUE_) {
+
+    class_read_double("p_zones",pth->p_zones);
+
+  }
+
   /** - reionization parametrization */
   class_call(parser_read_string(pfc,"reio_parametrization",&string1,&flag1,errmsg),
              errmsg,
@@ -3302,6 +3313,7 @@ int input_default_params(
   pth->Delta1=.1;
   pth->Delta2=1.;
   pth->Nzones=10;
+  pth->p_zones=0.5;
   pth->reio_parametrization=reio_camb;
   pth->reio_z_or_tau=reio_z;
   pth->z_reio=11.357;

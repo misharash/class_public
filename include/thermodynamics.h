@@ -292,6 +292,7 @@ struct thermo
   double Delta1; //density in first zone (3zones), in units of average density; default .1
   double Delta2; //density in second zone (3zones), in units of average density; default 1
   int Nzones; //number of zones for Nzones; default 10
+  double p_zones; //success probability for binomial weights of Nzones
 
   //@}
 

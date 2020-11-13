@@ -133,6 +133,7 @@ cdef extern from "class.h":
         double Delta1
         double Delta2
         int Nzones
+        double p_zones
 
     cdef struct perturbs:
         ErrorMsg error_message
