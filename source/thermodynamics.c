@@ -1955,6 +1955,8 @@ int thermodynamics_reionization_function(
 
       *xe = preio->reionization_parameters[preio->index_reio_xe_before];
 
+      class_test(!isfinite(*xe), pth->error_message, "xe=%lf, z=%lf, argument=%lf", *xe, z, argument);
+
     }
 
     else {
@@ -1984,6 +1986,8 @@ int thermodynamics_reionization_function(
           +preio->reionization_parameters[preio->index_reio_xe_before];
       }
 
+      class_test(!isfinite(*xe), pth->error_message, "xe=%lf, z=%lf, argument=%lf", *xe, z, argument);
+
       /** - --> case z < z_reio_start: helium contribution (tanh of simpler argument) */
 
       if (pth->reio_parametrization == reio_camb) {
@@ -1993,6 +1997,8 @@ int thermodynamics_reionization_function(
         *xe += preio->reionization_parameters[preio->index_helium_fullreio_fraction]
           * (tanh(argument)+1.)/2.;
       }
+
+      class_test(!isfinite(*xe), pth->error_message, "xe=%lf, z=%lf, argument=%lf", *xe, z, argument);
     }
 
     return _SUCCESS_;
@@ -2907,7 +2913,7 @@ int thermodynamics_reionization_sample(
 
     class_test((dkappadz == 0.) || (dkappadtau == 0.),
                pth->error_message,
-               "stop to avoid division by zero");
+               "stop to avoid division by zero. z=%lf, xe=%lf, dkappadz=%lf, dkappadtau=%lf", z, xe, dkappadz, dkappadtau);
 
     relative_variation = fabs((dkappadz_next-dkappadz)/dkappadz) +
       fabs((dkappadtau_next-dkappadtau)/dkappadtau);
@@ -3642,15 +3648,20 @@ int thermodynamics_recombination_Nzones(
       //average the intrinsic quantities (w.r.t. density) with weights f*Delta
       j = ii + preco->index_re_xe;
       *(preco->recombination_table + j) += fV[k]*Delta[k]*(reco[k].recombination_table)[j];
+      class_test(!isfinite(*(preco->recombination_table + j)) || !isfinite((reco[k].recombination_table)[j]), pth->error_message, "k=%d, Delta=%lf, z=%lf, xe=%lf, xe_out=%lf", k, Delta[k], *(preco->recombination_table + ii + preco->index_re_z), *(preco->recombination_table + j), (reco[k].recombination_table)[j])
       j = ii + preco->index_re_Tb;
       *(preco->recombination_table + j) += fV[k]*Delta[k]*(reco[k].recombination_table)[j];
+      class_test(!isfinite(*(preco->recombination_table + j)) || !isfinite((reco[k].recombination_table)[j]), pth->error_message, "k=%d, Delta=%lf, z=%lf, Tb=%lf, Tb_out=%lf", k, Delta[k], *(preco->recombination_table + ii + preco->index_re_z), *(preco->recombination_table + j), (reco[k].recombination_table)[j])
       j = ii + preco->index_re_cb2;
       *(preco->recombination_table + j) += fV[k]*Delta[k]*(reco[k].recombination_table)[j];
+      class_test(!isfinite(*(preco->recombination_table + j)) || !isfinite((reco[k].recombination_table)[j]), pth->error_message, "k=%d, Delta=%lf, z=%lf, cb2=%lf, cb2_out=%lf", k, Delta[k], *(preco->recombination_table + ii + preco->index_re_z), *(preco->recombination_table + j), (reco[k].recombination_table)[j])
       j = ii + preco->index_re_wb;
       *(preco->recombination_table + j) += fV[k]*Delta[k]*(reco[k].recombination_table)[j];
+      class_test(!isfinite(*(preco->recombination_table + j)) || !isfinite((reco[k].recombination_table)[j]), pth->error_message, "k=%d, Delta=%lf, z=%lf, wb=%lf, wb_out=%lf", k, Delta[k], *(preco->recombination_table + ii + preco->index_re_z), *(preco->recombination_table + j), (reco[k].recombination_table)[j])
       //average the extrinsic quantity (w.r.t. density) - scattering rate with weights f
       j = ii + preco->index_re_dkappadtau;
       *(preco->recombination_table + j) += fV[k]*(reco[k].recombination_table)[j];
+      class_test(!isfinite(*(preco->recombination_table + j)) || !isfinite((reco[k].recombination_table)[j]), pth->error_message, "k=%d, Delta=%lf, z=%lf, dkappadtau=%lf, dkappadtau_out=%lf", k, Delta[k], *(preco->recombination_table + ii + preco->index_re_z), *(preco->recombination_table + j), (reco[k].recombination_table)[j])
     }
   }
 
