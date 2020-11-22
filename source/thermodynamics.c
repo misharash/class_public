@@ -3428,6 +3428,7 @@ int thermodynamics_recombination_3zones(
 
   //load free params
   b = pth->clumping_b;
+  class_test(b < 0, pth->error_message, "3 zones error: clumping parameter (b=%lf) can not be negative", b);
   f2V = pth->f2V;
   Delta1 = pth->Delta1;
   Delta2 = pth->Delta2;
@@ -3545,6 +3546,8 @@ int thermodynamics_recombination_Nzones(
   double b = pth->clumping_b;
   //number of zones
   int N = pth->Nzones;
+  class_test(b < 0, pth->error_message, "N=%d zones error: clumping parameter (b=%lf) can not be negative", N, b);
+  class_test(N < 2, pth->error_message, "N=%d zones error: need at least 2 zones to model clumping", N);
   //zone params: volume fractions f^i_V and density fractions Delta_i
   double fV[N], Delta[N];
   int k; //to loop over zones
@@ -3552,6 +3555,7 @@ int thermodynamics_recombination_Nzones(
   //adjust parameters of binomial distribution
   int n = N-1;
   double p = pth->p_zones;
+  class_test((p > 1.) || (p < 0.), pth->error_message, "N=%d zones error: binomial success probability (p=%lf) is not between 0 and 1", N, p);
   double q = 1-p;
   //Delta_k will be alpha*beta^k, solve for them to give correct
   double gamma = pow(1+b, 1./n);
