@@ -1481,7 +1481,7 @@ int input_read_parameters(
 
   }
 
-  /** - baryon clumping parameter for recfast_3zones or recfast_Nzones */
+  /** - baryon clumping parameter for different 3zones or Nzones models */
   class_call(parser_read_string(pfc,"clumping_b",&string1,&flag1,errmsg),
              errmsg,
              errmsg);
@@ -1492,7 +1492,7 @@ int input_read_parameters(
 
   }
 
-  /** - second zone volume fraction for recfast_3zones */
+  /** - second zone volume fraction for recfast/hyrec_3zones */
   class_call(parser_read_string(pfc,"f2V",&string1,&flag1,errmsg),
              errmsg,
              errmsg);
@@ -1503,7 +1503,7 @@ int input_read_parameters(
 
   }
 
-  /** - first zone density fraction for recfast_3zones */
+  /** - first zone density fraction for recfast/hyrec_3zones */
   class_call(parser_read_string(pfc,"Delta1",&string1,&flag1,errmsg),
              errmsg,
              errmsg);
@@ -1514,7 +1514,7 @@ int input_read_parameters(
 
   }
 
-  /** - second zone density for recfast_3zones */
+  /** - second zone density for recfast/hyrec_3zones */
   class_call(parser_read_string(pfc,"Delta2",&string1,&flag1,errmsg),
              errmsg,
              errmsg);
@@ -1525,7 +1525,7 @@ int input_read_parameters(
 
   }
 
-  /** - number of zones for recfast_Nzones */
+  /** - number of zones for recfast/hyrec_Nzones */
   class_call(parser_read_string(pfc,"Nzones",&string1,&flag1,errmsg),
              errmsg,
              errmsg);
@@ -1536,7 +1536,7 @@ int input_read_parameters(
 
   }
 
-  /** - binomial success probability for recfast_Nzones */
+  /** - binomial success probability for recfast/hyrec_Nzones */
   class_call(parser_read_string(pfc,"p_zones",&string1,&flag1,errmsg),
              errmsg,
              errmsg);
