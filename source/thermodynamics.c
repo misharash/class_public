@@ -3451,12 +3451,16 @@ int thermodynamics_recombination_3zones(
   else if ((pth->recombination==recfast_3zones_moments) || (pth->recombination==hyrec_3zones_moments)) { //moments parametrisation
     double sigma = sqrt(b);
     //s is skewness, k is kurtosis
-    double kp = 2; //k'=k-(1+s^2)
-    double sp = 0.5; //s' is a linear scale between minimum and maximum skewness
-    double Deltamin = 0.1, Deltamax = 10; //minimal and maximal Delta allowed to make sure recombination codes work physically
+    double kp = pth->k_prime; //k'=k-(1+s^2)
+    class_test(kp < 0., pth->error_message, "3 zones moments error: negative k' (%lf)", kp);
+    double sp = pth->s_prime; //s' is a linear scale between minimum and maximum skewness
+    class_test((sp > 1.) || (sp < 0.), pth->error_message, "3 zones moments error: skewness scale (s'=%lf) is not between 0 and 1", sp);
+    double Deltamin = pth->Delta_min, Deltamax = pth->Delta_max; //minimal and maximal Delta allowed to make sure recombination codes work physically
+    class_test((Deltamin < 0.) || (Deltamin >= 1.), pth->error_message, "3 zones moments error: Delta_min (%lf) is not between 0 and 1", Deltamin);
+    class_test(Deltamax < 1., pth->error_message, "3 zones moments error: Delta_max (%lf) less than 1", Deltamax);
     double deltamin = Deltamin-1, deltamax = Deltamax-1; //minimal and maximal overdensities
     double cmin = deltamin/sigma, cmax=deltamax/sigma; //overdensities normalized by sigma
-    double eps = 1e-3; //tolerance for several checks
+    double eps = 1e-4; //tolerance for several checks
     if (sigma < eps) cmin = (cmax = 1.);
     double smin = -(1+kp)/cmin+cmin, smax = -(1+kp)/cmax+cmax; //minimal and maximal skewness
     class_test(smin > smax, pth->error_message, "3 zones moments error: minimal skewness %lf is greater than maximal %lf", smin, smax);
@@ -3470,6 +3474,8 @@ int thermodynamics_recombination_3zones(
     f3V = 2./t/(t+s);
     Delta1 = delta1+1.;
     Delta3 = delta3+1.;
+    class_test(Delta1 < Deltamin-eps, pth->error_message, "3 zones moments errors: Delta1 (%lf) lower than minimal (%lf)", Delta1, Deltamin);
+    class_test(Delta3 > Deltamax+eps, pth->error_message, "3 zones moments errors: Delta3 (%lf) higher than maximal (%lf)", Delta3, Deltamax);
     //check the skewness and kurtosis
     if (sigma > eps) { //if sigma is not too small
       double s_calc = (f1V*delta1*delta1*delta1+f3V*delta3*delta3*delta3)/b/sigma;

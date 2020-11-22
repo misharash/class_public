@@ -295,6 +295,8 @@ struct thermo
   double Delta2; //density in second zone (3zones), in units of average density; default 1
   int Nzones; //number of zones for Nzones; default 10
   double p_zones; //success probability for binomial weights of Nzones
+  double k_prime, s_prime; //kurtosis and skewness parameters in 3 zones moments parametrization, defaults 2 and 0.5
+  double Delta_min, Delta_max; //minimal and maximal allowed Delta in 3 zones moments parametrization, defaults 0.1 and 10
 
   //@}
 

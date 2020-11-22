@@ -1547,6 +1547,50 @@ int input_read_parameters(
 
   }
 
+  /** - kurtosis parameter for recfast/hyrec_3zones_moments */
+  class_call(parser_read_string(pfc,"k_prime",&string1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+  if (flag1 == _TRUE_) {
+
+    class_read_double("k_prime",pth->k_prime);
+
+  }
+
+  /** - skewness parameter for recfast/hyrec_3zones_moments */
+  class_call(parser_read_string(pfc,"s_prime",&string1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+  if (flag1 == _TRUE_) {
+
+    class_read_double("s_prime",pth->s_prime);
+
+  }
+
+  /** - minimal Delta for recfast/hyrec_3zones_moments */
+  class_call(parser_read_string(pfc,"Delta_min",&string1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+  if (flag1 == _TRUE_) {
+
+    class_read_double("Delta_min",pth->Delta_min);
+
+  }
+
+  /** - maximal Delta for recfast/hyrec_3zones_moments */
+  class_call(parser_read_string(pfc,"Delta_max",&string1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+  if (flag1 == _TRUE_) {
+
+    class_read_double("Delta_max",pth->Delta_max);
+
+  }
+
   /** - reionization parametrization */
   class_call(parser_read_string(pfc,"reio_parametrization",&string1,&flag1,errmsg),
              errmsg,
@@ -3322,6 +3366,10 @@ int input_default_params(
   pth->Delta2=1.;
   pth->Nzones=10;
   pth->p_zones=0.5;
+  pth->k_prime=2.;
+  pth->s_prime=0.5;
+  pth->Delta_min=0.1;
+  pth->Delta_max=10.;
   pth->reio_parametrization=reio_camb;
   pth->reio_z_or_tau=reio_z;
   pth->z_reio=11.357;
