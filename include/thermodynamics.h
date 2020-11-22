@@ -18,7 +18,9 @@ enum recombination_algorithm {
   recfast_3zones,
   recfast_Nzones,
   hyrec_3zones,
-  hyrec_Nzones
+  hyrec_Nzones,
+  recfast_3zones_moments,
+  hyrec_3zones_moments
 };
 
 /**

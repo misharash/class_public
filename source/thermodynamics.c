@@ -3102,7 +3102,7 @@ int thermodynamics_recombination(
 
   }
 
-  if ((pth->recombination==recfast_3zones) || (pth->recombination==hyrec_3zones)) {
+  if ((pth->recombination==recfast_3zones) || (pth->recombination==hyrec_3zones) || (pth->recombination==recfast_3zones_moments) || (pth->recombination==hyrec_3zones_moments)) {
 
     class_call(thermodynamics_recombination_3zones(ppr,pba,pth,preco,pvecback),
                pth->error_message,
@@ -3429,22 +3429,58 @@ int thermodynamics_recombination_3zones(
   //load free params
   b = pth->clumping_b;
   class_test(b < 0, pth->error_message, "3 zones error: clumping parameter (b=%lf) can not be negative", b);
-  f2V = pth->f2V;
-  Delta1 = pth->Delta1;
-  Delta2 = pth->Delta2;
 
-  //recover other parameters using
-  //sum(f^V_i)=1 - volume conservation
-  //sum(f^V_i*Delta_i)=1 - average density fraction is 1
-  //sum(f^V_i*Delta_i^2)=1+b - mean square of density is by factor (1+b) higher than square of mean density
-  double fVres = 1-f2V; //sum of fV for first and last zone
-  double fVDeltares = 1-f2V*Delta2; //sum of fV*Delta for first and last zone
-  double fVDelta2res = 1+b-f2V*Delta2*Delta2; //sum of fV*Delta^2 for first and last zone
-  double Dres = fVDeltares-fVres*Delta1; //=f3V*(Delta3-Delta1)
-  double D2res = fVDelta2res-fVres*Delta1*Delta1; //=f3V*(Delta3^2-Delta1^2)
-  Delta3 = D2res/Dres-Delta1; //D2res/Dres=Delta3+Delta1
-  f3V = Dres/(Delta3-Delta1);
-  f1V = fVres - f3V;
+  if ((pth->recombination==recfast_3zones) || (pth->recombination==hyrec_3zones)) { //Jedamzik&Pogosian's parametrization
+    f2V = pth->f2V;
+    Delta1 = pth->Delta1;
+    Delta2 = pth->Delta2;
+
+    //recover other parameters using
+    //sum(f^V_i)=1 - volume conservation
+    //sum(f^V_i*Delta_i)=1 - average density fraction is 1
+    //sum(f^V_i*Delta_i^2)=1+b - mean square of density is by factor (1+b) higher than square of mean density
+    double fVres = 1-f2V; //sum of fV for first and last zone
+    double fVDeltares = 1-f2V*Delta2; //sum of fV*Delta for first and last zone
+    double fVDelta2res = 1+b-f2V*Delta2*Delta2; //sum of fV*Delta^2 for first and last zone
+    double Dres = fVDeltares-fVres*Delta1; //=f3V*(Delta3-Delta1)
+    double D2res = fVDelta2res-fVres*Delta1*Delta1; //=f3V*(Delta3^2-Delta1^2)
+    Delta3 = D2res/Dres-Delta1; //D2res/Dres=Delta3+Delta1
+    f3V = Dres/(Delta3-Delta1);
+    f1V = fVres - f3V;
+  }
+  else if ((pth->recombination==recfast_3zones_moments) || (pth->recombination==hyrec_3zones_moments)) { //moments parametrisation
+    double sigma = sqrt(b);
+    //s is skewness, k is kurtosis
+    double kp = 2; //k'=k-(1+s^2)
+    double sp = 0.5; //s' is a linear scale between minimum and maximum skewness
+    double Deltamin = 0.1, Deltamax = 10; //minimal and maximal Delta allowed to make sure recombination codes work physically
+    double deltamin = Deltamin-1, deltamax = Deltamax-1; //minimal and maximal overdensities
+    double cmin = deltamin/sigma, cmax=deltamax/sigma; //overdensities normalized by sigma
+    double eps = 1e-3; //tolerance for several checks
+    if (sigma < eps) cmin = (cmax = 1.);
+    double smin = -(1+kp)/cmin+cmin, smax = -(1+kp)/cmax+cmax; //minimal and maximal skewness
+    class_test(smin > smax, pth->error_message, "3 zones moments error: minimal skewness %lf is greater than maximal %lf", smin, smax);
+    double s = smin+(smax-smin)*sp; //skewness
+    double k = kp+1+s*s; //kurtosis
+    double t = sqrt(4*(1+kp)+s*s);
+    Delta2 = 1.;
+    f2V = kp/(1+kp);
+    double delta1 = (s-t)/2.*sigma, delta3 = (s+t)/2.*sigma; //overdensities
+    f1V = 2./t/(t-s);
+    f3V = 2./t/(t+s);
+    Delta1 = delta1+1.;
+    Delta3 = delta3+1.;
+    //check the skewness and kurtosis
+    if (sigma > eps) { //if sigma is not too small
+      double s_calc = (f1V*delta1*delta1*delta1+f3V*delta3*delta3*delta3)/b/sigma;
+      class_test(fabs(s_calc-s) > eps, pth->error_message, "3 zones moments error: skewness (%lf) is too far from required (%lf)", s_calc, s);
+      double k_calc = (f1V*delta1*delta1*delta1*delta1+f3V*delta3*delta3*delta3*delta3)/b/b;
+      class_test(fabs(k_calc-k) > eps, pth->error_message, "3 zones moments error: kurtosis (%lf) is too far from required (%lf)", k_calc, k);
+    }
+  }
+  else {
+    class_stop(pth->error_message, "3 zones error: no parametrization (Jedamzik&Pogosian's or moments) matched");
+  }
 
   //check the constraints
   double ctol = 1e-6; //tolerance
@@ -3466,7 +3502,7 @@ int thermodynamics_recombination_3zones(
   memcpy(&reco2, preco, sizeof(struct recombination));
   memcpy(&reco3, preco, sizeof(struct recombination));
 
-  if (pth->recombination==recfast_3zones) {
+  if ((pth->recombination==recfast_3zones) || (pth->recombination==recfast_3zones_moments)) {
     //invoke usual RECFAST 3 times with different density fractions
     class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,&reco1,pvecback,Delta1),
                 pth->error_message,
@@ -3484,7 +3520,7 @@ int thermodynamics_recombination_3zones(
                   pth->error_message,
                   pth->error_message);
   }
-  else if (pth->recombination==hyrec_3zones) {
+  else if ((pth->recombination==hyrec_3zones) || (pth->recombination==hyrec_3zones_moments)) {
     //invoke HYREC 3 times with different density fractions
     class_call(thermodynamics_recombination_with_hyrec(ppr,pba,pth,&reco1,pvecback,Delta1),
                 pth->error_message,
