@@ -3479,9 +3479,10 @@ int thermodynamics_recombination_3zones(
                 pth->error_message);
 
     //do recombination with average density to fill the output recombination structure
-    class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,preco,pvecback,1),
-                pth->error_message,
-                pth->error_message);
+    if (Delta2 != 1.) //only if not done already for Delta2
+      class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,preco,pvecback,1),
+                  pth->error_message,
+                  pth->error_message);
   }
   else if (pth->recombination==hyrec_3zones) {
     //invoke HYREC 3 times with different density fractions
@@ -3496,12 +3497,18 @@ int thermodynamics_recombination_3zones(
                 pth->error_message);
 
     //do recombination with average density to fill the output recombination structure
-    class_call(thermodynamics_recombination_with_hyrec(ppr,pba,pth,preco,pvecback,1),
-                pth->error_message,
-                pth->error_message);
+    if (Delta2 != 1.) //only if not done already for Delta2
+      class_call(thermodynamics_recombination_with_hyrec(ppr,pba,pth,preco,pvecback,1),
+                  pth->error_message,
+                  pth->error_message);
   }
   else {
     class_stop(pth->error_message, "3 zones error: no algorithm (RECFAST or HYREC) matched");
+  }
+
+  if (Delta2 == 1.) {
+    memcpy(preco, &reco2, sizeof(struct recombination)); //copy recombination structure 2 to output
+    class_alloc(preco->recombination_table, preco->re_size*preco->rt_size*sizeof(double), pth->error_message); //allocate new memory for recombination table
   }
 
   //merge 3 recombination tables
