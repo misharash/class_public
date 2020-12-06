@@ -1479,6 +1479,14 @@ int input_read_parameters(
       pth->recombination = hyrec_3zones_moments;
     }
 
+    if ((strstr(string1,"recfast_3zones_lowlevel") != NULL)) {
+      pth->recombination = recfast_3zones_lowlevel;
+    }
+
+    if ((strstr(string1,"hyrec_3zones_lowlevel") != NULL)) {
+      pth->recombination = hyrec_3zones_lowlevel;
+    }
+
   }
 
   /** - baryon clumping parameter for different 3zones or Nzones models */
@@ -1588,6 +1596,28 @@ int input_read_parameters(
   if (flag1 == _TRUE_) {
 
     class_read_double("Delta_max",pth->Delta_max);
+
+  }
+
+  /** - negative delta for recfast/hyrec_3zones_lowlevel */
+  class_call(parser_read_string(pfc,"delta_m",&string1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+  if (flag1 == _TRUE_) {
+
+    class_read_double("delta_m",pth->delta_m);
+
+  }
+
+  /** - negative delta for recfast/hyrec_3zones_lowlevel */
+  class_call(parser_read_string(pfc,"delta_p",&string1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+  if (flag1 == _TRUE_) {
+
+    class_read_double("delta_p",pth->delta_p);
 
   }
 
@@ -3370,6 +3400,8 @@ int input_default_params(
   pth->s_prime=0.5;
   pth->Delta_min=0.1;
   pth->Delta_max=10.;
+  pth->delta_m=-0.9;
+  pth->delta_p=1.05;
   pth->reio_parametrization=reio_camb;
   pth->reio_z_or_tau=reio_z;
   pth->z_reio=11.357;

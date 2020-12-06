@@ -3102,7 +3102,7 @@ int thermodynamics_recombination(
 
   }
 
-  if ((pth->recombination==recfast_3zones) || (pth->recombination==hyrec_3zones) || (pth->recombination==recfast_3zones_moments) || (pth->recombination==hyrec_3zones_moments)) {
+  if ((pth->recombination==recfast_3zones) || (pth->recombination==hyrec_3zones) || (pth->recombination==recfast_3zones_moments) || (pth->recombination==hyrec_3zones_moments) || (pth->recombination==recfast_3zones_lowlevel) || (pth->recombination==hyrec_3zones_lowlevel)) {
 
     class_call(thermodynamics_recombination_3zones(ppr,pba,pth,preco,pvecback),
                pth->error_message,
@@ -3484,15 +3484,31 @@ int thermodynamics_recombination_3zones(
       class_test(fabs(k_calc-k) > eps, pth->error_message, "3 zones moments error: kurtosis (%lf) is too far from required (%lf)", k_calc, k);
     }
   }
+  else if ((pth->recombination==recfast_3zones_lowlevel) || (pth->recombination==hyrec_3zones_lowlevel)) { //lowlevel parametrisation
+    f2V = pth->f2V;
+    double delta_m = pth->delta_m;
+    class_test(delta_m >= 0., pth->error_message, "3 zones lowlevel error: negative overdensity is not negative (%lf)", delta_m);
+    class_test(delta_m <= -1., pth->error_message, "3 zones lowlevel error: negative overdensity is less than -1 (%lf) yielding negative density", delta_m);
+    double delta_p = pth->delta_p;
+    class_test(delta_p <= 0., pth->error_message, "3 zones lowlevel error: positive overdensity is not positive (%lf)", delta_p);
+    Delta1 = 1.+delta_m;
+    Delta2 = 1.;
+    Delta3 = 1.+delta_p;
+    double delta_diff = delta_p-delta_m;
+    //conserve weights sum and mean density
+    f1V = (1.-f2V)*delta_p/delta_diff;
+    f3V = (1.-f2V)*(-delta_m)/delta_diff;
+  }
   else {
-    class_stop(pth->error_message, "3 zones error: no parametrization (Jedamzik&Pogosian's or moments) matched");
+    class_stop(pth->error_message, "3 zones error: no parametrization (Jedamzik&Pogosian's, moments or lowlevel) matched");
   }
 
   //check the constraints
   double ctol = 1e-6; //tolerance
   class_test(fabs(f1V+f2V+f3V - 1) > ctol, pth->error_message, "3 zones error: sum of volume fractions (%.7lf) is too far from 1", f1V+f2V+f3V);
   class_test(fabs(f1V*Delta1+f2V*Delta2+f3V*Delta3 - 1) > ctol, pth->error_message, "3 zones error: average density (%.7lf) is too far from 1", f1V*Delta1+f2V*Delta2+f3V*Delta3);
-  class_test(fabs(f1V*Delta1*Delta1+f2V*Delta2*Delta2+f3V*Delta3*Delta3 - (1+b)) > ctol, pth->error_message, "3 zones error: clumping factor (%.7lf) is too far from b=%lf", f1V*Delta1*Delta1+f2V*Delta2*Delta2+f3V*Delta3*Delta3-1, b);
+  if ((pth->recombination!=recfast_3zones_lowlevel) && (pth->recombination!=hyrec_3zones_lowlevel)) //lowlevel parametrization has no clumping set
+    class_test(fabs(f1V*Delta1*Delta1+f2V*Delta2*Delta2+f3V*Delta3*Delta3 - (1+b)) > ctol, pth->error_message, "3 zones error: clumping factor (%.7lf) is too far from b=%lf", f1V*Delta1*Delta1+f2V*Delta2*Delta2+f3V*Delta3*Delta3-1, b);
 
   //sanity checks
   class_test(f1V < -ctol, pth->error_message, "3 zones error: 1st volume fraction (%lf) is negative", f1V);
@@ -3508,7 +3524,7 @@ int thermodynamics_recombination_3zones(
   memcpy(&reco2, preco, sizeof(struct recombination));
   memcpy(&reco3, preco, sizeof(struct recombination));
 
-  if ((pth->recombination==recfast_3zones) || (pth->recombination==recfast_3zones_moments)) {
+  if ((pth->recombination==recfast_3zones) || (pth->recombination==recfast_3zones_moments) || (pth->recombination==recfast_3zones_lowlevel)) {
     //invoke usual RECFAST 3 times with different density fractions
     class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,&reco1,pvecback,Delta1),
                 pth->error_message,
@@ -3526,7 +3542,7 @@ int thermodynamics_recombination_3zones(
                   pth->error_message,
                   pth->error_message);
   }
-  else if ((pth->recombination==hyrec_3zones) || (pth->recombination==hyrec_3zones_moments)) {
+  else if ((pth->recombination==hyrec_3zones) || (pth->recombination==hyrec_3zones_moments) || (pth->recombination==hyrec_3zones_lowlevel)) {
     //invoke HYREC 3 times with different density fractions
     class_call(thermodynamics_recombination_with_hyrec(ppr,pba,pth,&reco1,pvecback,Delta1),
                 pth->error_message,
