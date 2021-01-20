@@ -22,7 +22,9 @@ enum recombination_algorithm {
   recfast_3zones_moments,
   hyrec_3zones_moments,
   recfast_3zones_lowlevel,
-  hyrec_3zones_lowlevel
+  hyrec_3zones_lowlevel,
+  recfast_Nzones_lowlevel,
+  hyrec_Nzones_lowlevel,
 };
 
 /**
@@ -299,7 +301,7 @@ struct thermo
   double p_zones; //success probability for binomial weights of Nzones
   double k_prime, s_prime; //kurtosis and skewness parameters in 3 zones moments parametrization, defaults 2 and 0.5
   double Delta_min, Delta_max; //minimal and maximal allowed Delta in 3 zones moments parametrization, defaults 0.1 and 10
-  double delta_m, delta_p; //negative and positive overdensities for 3 zones lowlevel parametrization, defaults -0.9 and 1.05
+  double delta_m, delta_p; //negative and positive overdensities for 3 or N zones lowlevel parametrization, defaults -0.9 and 1.05
 
   //@}
 

@@ -3110,7 +3110,7 @@ int thermodynamics_recombination(
 
   }
 
-  if ((pth->recombination==recfast_Nzones) || (pth->recombination==hyrec_Nzones)) {
+  if ((pth->recombination==recfast_Nzones) || (pth->recombination==hyrec_Nzones) || (pth->recombination==recfast_Nzones_lowlevel) || (pth->recombination==hyrec_Nzones_lowlevel)) {
 
     class_call(thermodynamics_recombination_Nzones(ppr,pba,pth,preco,pvecback),
                pth->error_message,
@@ -3607,7 +3607,7 @@ int thermodynamics_recombination_Nzones(
                                         double * pvecback
                                         ) {
   
-  //clumping factor b
+  //clumping factor b - not actually used in lowlevel version
   double b = pth->clumping_b;
   //number of zones
   int N = pth->Nzones;
@@ -3619,13 +3619,34 @@ int thermodynamics_recombination_Nzones(
 
   //adjust parameters of binomial distribution
   int n = N-1;
-  double p = pth->p_zones;
-  class_test((p > 1.) || (p < 0.), pth->error_message, "N=%d zones error: binomial success probability (p=%lf) is not between 0 and 1", N, p);
-  double q = 1-p;
-  //Delta_k will be alpha*beta^k, solve for them to give correct
-  double gamma = pow(1+b, 1./n);
-  double beta = (gamma*p*q+sqrt(p*q*(gamma-1)))/p/(1-gamma*p);
-  double alpha = pow(beta*p+q, -n);
+  double p, q, alpha, beta;
+  if ((pth->recombination==recfast_Nzones) || (pth->recombination==hyrec_Nzones)) {
+    //binomial success probability is input parameter
+    p = pth->p_zones;
+    class_test((p >= 1.) || (p <= 0.), pth->error_message, "N=%d zones error: binomial success probability (p=%lf) is not between 0 and 1", N, p);
+    q = 1.-p;
+    //Delta_k will be alpha*beta^k, solve for them to give correct distribution moments
+    double gamma = pow(1+b, 1./n);
+    beta = (gamma*p*q+sqrt(p*q*(gamma-1)))/p/(1-gamma*p);
+    alpha = pow(beta*p+q, -n);
+  }
+  else if ((pth->recombination==recfast_Nzones_lowlevel) || (pth->recombination==hyrec_Nzones_lowlevel)) {
+    //minimal and maximal (over)density fractions are input parameters
+    double Delta_min = 1. + pth->delta_m;
+    class_test(Delta_min <= 0., pth->error_message, "N=%d zones lowlevel error: minimal density fraction is not positive (%lf)", N, Delta_min);
+    class_test(Delta_min >= 1., pth->error_message, "N=%d zones lowlevel error: minimal density fraction is not smaller than 1 (%lf)", N, Delta_min);
+    double Delta_max = 1. + pth->delta_p;
+    class_test(Delta_max <= 1., pth->error_message, "N=%d zones lowlevel error: maximal density fraction is not greater than 1 (%lf)", N, Delta_max);
+    //Delta_k will be alpha*beta^k, solve for them to give correct distribution moments
+    alpha = Delta_min;
+    beta = pow(Delta_max/Delta_min, 1./n);
+    p = (pow(alpha, -1./n)-1.)/(beta-1.);
+    class_test((p >= 1.) || (p <= 0.), pth->error_message, "N=%d zones lowlevel error: binomial success probability (p=%lf) is not between 0 and 1", N, p);
+    q = 1.-p;
+  }
+  else {
+    class_stop(pth->error_message, "N=%d zones error: no parametrization (original or lowlevel) matched", N);
+  }
   //initialize residual variables
   double fVres = 1; //sum of fVs is 1
   double fVDeltares = 1; //sum of fVs times Deltas is also 1
@@ -3649,13 +3670,15 @@ int thermodynamics_recombination_Nzones(
   //sum(f^V_i*Delta_i)=1 - average density fraction is 1. RHS-LHS is stored in fVDeltares
   class_test(fabs(fVDeltares) > ctol, pth->error_message, "N=%d zones error: average density (%.7lf) is too far from 1", N, 1-fVDeltares);
   //sum(f^V_i*Delta_i^2)=1+b - mean square of density is by factor (1+b) higher than square of mean density. RHS-LHS is stored in fVDelta2res
-  class_test(fabs(fVDelta2res) > ctol, pth->error_message, "N=%d zones error: clumping factor (%.7lf) is too far from b=%lf", N, b-fVDelta2res, b);
+  if (!((pth->recombination==recfast_Nzones_lowlevel) || (pth->recombination==hyrec_Nzones_lowlevel))) { //not used in lowlevel
+    class_test(fabs(fVDelta2res) > ctol, pth->error_message, "N=%d zones error: clumping factor (%.7lf) is too far from b=%lf", N, b-fVDelta2res, b);
+  }
 
   //define and prefill the N recombination structures
   struct recombination reco[N];
   for (k = 0; k < N; ++k) memcpy(&reco[k], preco, sizeof(struct recombination));
 
-  if (pth->recombination==recfast_Nzones) {
+  if ((pth->recombination==recfast_Nzones) || (pth->recombination==recfast_Nzones_lowlevel)) {
     //invoke usual RECFAST N times with different density fractions
     for (k = 0; k < N; ++k) {
       class_call(thermodynamics_recombination_with_recfast(ppr,pba,pth,&reco[k],pvecback,Delta[k]),
@@ -3668,7 +3691,7 @@ int thermodynamics_recombination_Nzones(
                 pth->error_message,
                 pth->error_message);
   }
-  else if (pth->recombination==hyrec_Nzones) {
+  else if ((pth->recombination==hyrec_Nzones) || (pth->recombination==hyrec_Nzones_lowlevel)) {
     //invoke HYREC N times with different density fractions
     for (k = 0; k < N; ++k) {
       class_call(thermodynamics_recombination_with_hyrec(ppr,pba,pth,&reco[k],pvecback,Delta[k]),

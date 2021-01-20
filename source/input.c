@@ -1487,6 +1487,14 @@ int input_read_parameters(
       pth->recombination = hyrec_3zones_lowlevel;
     }
 
+    if ((strstr(string1,"recfast_Nzones_lowlevel") != NULL)) {
+      pth->recombination = recfast_Nzones_lowlevel;
+    }
+
+    if ((strstr(string1,"hyrec_Nzones_lowlevel") != NULL)) {
+      pth->recombination = hyrec_Nzones_lowlevel;
+    }
+
   }
 
   /** - baryon clumping parameter for different 3zones or Nzones models */
